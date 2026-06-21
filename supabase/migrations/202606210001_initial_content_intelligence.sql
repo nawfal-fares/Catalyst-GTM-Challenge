@@ -45,8 +45,8 @@ create table public.companies (
   enrichment_payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique nulls not distinct (client_id, domain),
-  unique nulls not distinct (client_id, external_id)
+  unique (client_id, domain),
+  unique (client_id, external_id)
 );
 
 create table public.people (
@@ -64,8 +64,8 @@ create table public.people (
   enrichment_payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique nulls not distinct (client_id, linkedin_id),
-  unique nulls not distinct (client_id, linkedin_url)
+  unique (client_id, linkedin_id),
+  unique (client_id, linkedin_url)
 );
 
 create table public.posts (
@@ -253,6 +253,7 @@ create table public.recommendations (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
   analysis_run_id uuid,
+  source_key text not null,
   content_idea text not null,
   hook text not null,
   format text not null,
@@ -262,7 +263,8 @@ create table public.recommendations (
   confidence numeric(5,2) not null,
   status text not null default 'proposed',
   generated_at timestamptz not null default now(),
-  expires_at timestamptz
+  expires_at timestamptz,
+  unique (client_id, source_key)
 );
 
 create table public.ingestion_runs (
