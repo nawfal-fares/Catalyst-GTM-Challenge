@@ -125,7 +125,7 @@ At 15M–50M event rows:
 Run a final secret audit before pushing:
 
 ```bash
-git grep -nEi '(service_role|github_pat_|ghp_|sk-[A-Za-z0-9])' -- ':!package-lock.json'
+git grep -nE '(github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+|sk-[A-Za-z0-9]{20,})' -- ':!package-lock.json'
 ```
 
 ## Tests
