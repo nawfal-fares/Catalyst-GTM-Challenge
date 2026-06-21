@@ -1,204 +1,404 @@
-import Link from "next/link";
 import {
-  ArrowRight,
-  CircleDollarSign,
-  Eye,
-  FileCheck2,
-  MessageCircleMore,
-  Network,
-  Sparkles,
-  Target,
+  ArrowUpRight,
+  Building2,
+  MessageSquareText,
+  Repeat2,
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/dashboard/app-shell";
-import { PerformanceChart } from "@/components/dashboard/performance-chart";
-import { SectionHeading } from "@/components/dashboard/section-heading";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDashboardDataset } from "@/data/repository";
+import { ConfidencePanel } from "@/components/dashboard/confidence-panel";
+import { EvidenceLabel } from "@/components/dashboard/evidence-label";
 import {
-  formatCompact,
-  formatCurrency,
-  getDailySeries,
-  getDashboardSummary,
-} from "@/lib/dashboard";
+  accountActivity,
+  audienceMix,
+  clientFindings,
+  ideaClusters,
+  observedSummary,
+  reportMeta,
+  seededPipeline,
+  whatWeLearned,
+} from "@/data/market-intelligence";
 
-export default async function ClientPage() {
-  const data = await getDashboardDataset();
-  const summary = getDashboardSummary(data);
-  const series = getDailySeries(data);
-  const topPosts = [...data.posts]
-    .sort((a, b) => b.metrics.at(-1)!.impressions - a.metrics.at(-1)!.impressions)
-    .slice(0, 3);
+const number = new Intl.NumberFormat("en-US");
+const compactCurrency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+function SectionTitle({
+  index,
+  title,
+  question,
+  layer,
+}: {
+  index: string;
+  title: string;
+  question: string;
+  layer: "observed" | "derived" | "seeded";
+}) {
+  return (
+    <div className="mb-5 grid gap-3 border-t border-black/18 pt-4 md:grid-cols-[70px_1fr_auto] md:items-start">
+      <span className="font-mono text-[10px] text-black/38">{index}</span>
+      <div>
+        <h2 className="font-serif text-3xl leading-none tracking-[-0.035em]">{title}</h2>
+        <p className="mt-2 text-sm text-black/50">{question}</p>
+      </div>
+      <EvidenceLabel layer={layer} />
+    </div>
+  );
+}
+
+export default function ClientPage() {
+  const seededTotal = seededPipeline.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <AppShell active="client" modeLabel="Demo · modeled">
-      <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <section className="relative overflow-hidden rounded-[2rem] bg-black px-6 py-8 text-white sm:px-10 sm:py-12 lg:px-14 lg:py-16">
-          <div className="absolute -right-20 -top-24 size-80 rounded-full bg-lime-300/20 blur-3xl" />
-          <div className="relative z-10 grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-            <div>
-              <Badge className="rounded-full bg-lime-300 text-black">June content brief</Badge>
-              <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-[0.98] tracking-[-0.055em] sm:text-6xl">
-                Your point of view is reaching the right rooms.
-              </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-white/60">
-                Will’s strongest content is doing more than creating attention. It is starting substantive conversations with senior operators and repeatedly exposing target accounts to Catalyst’s signal-loop thesis.
-              </p>
+    <AppShell active="client" modeLabel="Client readout · evidence labeled">
+      <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <header className="grid gap-8 border-b border-black/18 pb-10 lg:grid-cols-[1fr_320px] lg:items-end">
+          <div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[0.16em] text-black/45">
+              <span>Client readout</span>
+              <span>{reportMeta.client}</span>
+              <span>{reportMeta.period}</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-4xl font-semibold tracking-[-0.05em]">{formatCompact(summary.totalReach)}</div>
-                <div className="mt-1 text-xs text-white/45">modeled reach</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div className="text-4xl font-semibold tracking-[-0.05em]">{formatCurrency(summary.influencedPipeline)}</div>
-                <div className="mt-1 text-xs text-white/45">modeled influence</div>
-              </div>
-            </div>
+            <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-[0.94] tracking-[-0.055em] sm:text-6xl lg:text-[76px]">
+              Is the content creating meaningful market engagement?
+            </h1>
           </div>
-        </section>
+          <div className="border-l border-black/15 pl-5">
+            <p className="text-sm leading-6 text-black/58">
+              A decision-oriented readout of what people responded to, who was present,
+              and what the data cannot establish yet.
+            </p>
+            <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-black/38">
+              Prepared {reportMeta.prepared} · {reportMeta.scope}
+            </p>
+          </div>
+        </header>
 
-        <section className="my-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            { icon: FileCheck2, label: "Content shipped", value: data.posts.length.toString(), detail: "canonical posts" },
-            { icon: Eye, label: "Impressions", value: formatCompact(summary.totalImpressions), detail: "modeled owned analytics" },
-            { icon: Target, label: "ICP engagement", value: `${summary.qualifiedShare}%`, detail: `${summary.qualifiedPeople} qualified people` },
-            { icon: Users, label: "Target accounts", value: summary.targetAccounts.toString(), detail: "engaged this period" },
-          ].map((metric) => (
-            <Card key={metric.label} className="border-black/10 bg-white shadow-none">
-              <CardContent className="p-5">
-                <metric.icon className="size-4 text-muted-foreground" />
-                <div className="mt-8 text-3xl font-semibold tracking-[-0.04em]">{metric.value}</div>
-                <div className="mt-1 text-xs font-medium">{metric.label}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{metric.detail}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-
-        <section className="mb-12 grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-          <Card className="border-black/10 bg-white shadow-none">
-            <CardHeader>
-              <CardTitle className="text-base">Content performance</CardTitle>
-              <p className="text-xs text-muted-foreground">Impressions by publish date</p>
-            </CardHeader>
-            <CardContent><PerformanceChart data={series} /></CardContent>
-          </Card>
-          <Card className="border-lime-300 bg-lime-100/60 shadow-none">
-            <CardContent className="flex h-full flex-col p-6">
-              <Sparkles className="size-5" />
-              <p className="mt-12 text-xs font-semibold uppercase tracking-[0.16em]">Executive readout</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.045em]">Point of view beat promotion.</h2>
-              <p className="mt-4 text-sm leading-6 text-black/60">
-                The adaptive-content thesis drew senior, experience-rich comments. Free assets generated volume, but the clearest buyer signal came from a strong operating belief people could debate and apply.
-              </p>
-              <div className="mt-auto pt-8">
-                <div className="flex items-center gap-2 text-xs font-semibold"><MessageCircleMore className="size-4" /> 23 comments on the leading thesis</div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="mb-12">
-          <SectionHeading eyebrow="Top content" title="What earned attention" />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {topPosts.map((post, index) => (
-              <a key={post.id} href={post.linkedinUrl} target="_blank" rel="noreferrer" className="group">
-                <Card className="h-full border-black/10 bg-white shadow-none transition-transform group-hover:-translate-y-1">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">0{index + 1}</span>
-                      <Badge variant="outline">{post.analysis.format}</Badge>
-                    </div>
-                    <p className="mt-10 line-clamp-4 text-xl font-semibold leading-7 tracking-[-0.025em]">{post.excerpt}</p>
-                    <div className="mt-8 grid grid-cols-3 gap-3 border-t border-black/8 pt-4">
-                      <div><div className="text-sm font-semibold">{formatCompact(post.metrics.at(-1)!.impressions)}</div><div className="text-[9px] text-muted-foreground">impressions</div></div>
-                      <div><div className="text-sm font-semibold">{post.publicComments}</div><div className="text-[9px] text-muted-foreground">comments</div></div>
-                      <div><div className="text-sm font-semibold">{post.metrics.at(-1)!.engagementRate}%</div><div className="text-[9px] text-muted-foreground">engagement</div></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </a>
+        <section className="py-12">
+          <SectionTitle
+            index="01"
+            title="Executive summary"
+            question="Three findings that change how this period should be read."
+            layer="observed"
+          />
+          <div className="grid border border-black/14 bg-white lg:grid-cols-3">
+            {clientFindings.map((finding, index) => (
+              <article
+                key={finding.title}
+                className="flex min-h-[300px] flex-col border-b border-black/12 p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-black/35">0{index + 1}</span>
+                  <EvidenceLabel layer={finding.layer} />
+                </div>
+                <h3 className="mt-10 font-serif text-[28px] leading-[1.02] tracking-[-0.035em]">
+                  {finding.title}
+                </h3>
+                <p className="mt-4 text-sm leading-6 text-black/58">{finding.body}</p>
+                <p className="mt-auto border-t border-black/10 pt-4 font-mono text-[10px] font-semibold uppercase tracking-[0.1em]">
+                  {finding.evidence}
+                </p>
+              </article>
             ))}
           </div>
         </section>
 
-        <section className="mb-12 grid gap-4 lg:grid-cols-2">
-          <Card className="border-black bg-black text-white shadow-none">
-            <CardContent className="p-7">
+        <section className="pb-12">
+          <SectionTitle
+            index="02"
+            title="Market engagement"
+            question="The observed activity, then the interpretation built on top of it."
+            layer="observed"
+          />
+          <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+            <div className="border border-black/14 bg-[#182320] p-6 text-white">
               <div className="flex items-center justify-between">
-                <Network className="size-5 text-lime-300" />
-                <Badge className="bg-white/10 text-white">{summary.seededAccounts} accounts</Badge>
+                <EvidenceLabel layer="observed" className="border-white/30" />
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/40">
+                  LinkedIn export
+                </span>
               </div>
-              <h2 className="mt-16 text-4xl font-semibold tracking-[-0.05em]">The idea is traveling.</h2>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-white/55">
-                Multiple people inside the same accounts are engaging with the idea that content should operate as a live learning loop. That is an account warming signal, not a claim that content caused a deal.
-              </p>
-              <div className="mt-8 grid grid-cols-3 gap-3">
-                {data.ideaSeeds.slice(0, 3).map((seed) => (
-                  <div key={seed.id} className="rounded-xl border border-white/10 p-3">
-                    <div className="text-lg font-semibold">{seed.peopleCount}</div>
-                    <div className="text-[9px] leading-4 text-white/45">stakeholders at {data.companies.find((company) => company.id === seed.companyId)?.name}</div>
+              <div className="mt-12 grid grid-cols-2 gap-px bg-white/12 sm:grid-cols-4">
+                {[
+                  ["Canonical entries", observedSummary.posts],
+                  ["Public reactions", observedSummary.publicReactions],
+                  ["Public comments", observedSummary.publicComments],
+                  ["Known engagers", observedSummary.uniqueEngagedPeople],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-[#182320] px-4 py-5">
+                    <div className="font-serif text-4xl tracking-[-0.04em]">
+                      {number.format(Number(value))}
+                    </div>
+                    <div className="mt-2 text-[11px] text-white/48">{label}</div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-black/10 bg-white shadow-none">
-            <CardContent className="p-7">
-              <div className="flex items-center justify-between">
-                <CircleDollarSign className="size-5" />
-                <Badge variant="outline">Modeled · not live CRM</Badge>
-              </div>
-              <h2 className="mt-16 text-4xl font-semibold tracking-[-0.05em]">{formatCurrency(summary.influencedPipeline)}</h2>
-              <p className="mt-2 text-sm font-medium">across {summary.influencedOpportunities} influenced opportunities</p>
-              <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                The demo joins observed engagers to seeded people, companies, and opportunities. A production CRM connector would use real contact and opportunity timestamps to preserve the same explainable chain.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-2">
-                <Badge className="bg-lime-200 text-lime-950">Direct</Badge>
-                <Badge className="bg-sky-100 text-sky-800">Influenced</Badge>
-                <Badge className="bg-stone-100 text-stone-700">Estimated</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="mb-12 rounded-[2rem] border border-black/10 bg-white p-6 sm:p-10">
-          <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-lime-700">Strategic direction</p>
-              <h2 className="mt-3 text-4xl font-semibold tracking-[-0.05em]">Turn the thesis into a series.</h2>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                Keep the core belief, increase the proof density, and answer the objections the right buyers are already handing us.
+              <p className="mt-5 text-[11px] leading-5 text-white/45">
+                Identity capture is slightly lower than the public totals:{" "}
+                {observedSummary.capturedReactionIdentities} named reactions and{" "}
+                {observedSummary.capturedComments} comment records were available for
+                person-level analysis.
               </p>
             </div>
-            <div className="space-y-3">
-              {data.recommendations.map((recommendation, index) => (
-                <div key={recommendation.id} className="grid gap-4 rounded-2xl bg-[#f6f6f1] p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <span className="grid size-9 place-items-center rounded-full bg-black text-xs font-semibold text-white">0{index + 1}</span>
+
+            <div className="border border-[#c99b55] bg-[#fff8e9] p-6">
+              <div className="flex items-center justify-between">
+                <EvidenceLabel layer="derived" />
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#7b4b05]/55">
+                  Directional
+                </span>
+              </div>
+              <p className="mt-12 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#7b4b05]/62">
+                Estimated audience reach
+              </p>
+              <div className="mt-2 font-serif text-5xl tracking-[-0.05em] text-[#35250e]">
+                23k–47k
+              </div>
+              <p className="mt-4 text-xs leading-5 text-[#5f461f]/70">
+                A working range based on {number.format(
+                  observedSummary.publicReactions +
+                    observedSummary.publicComments +
+                    observedSummary.publicReposts,
+                )}{" "}
+                public interactions and a 1.5–3% response assumption. Owned
+                impressions were not supplied, so this should not be used as a
+                performance target.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="pb-12">
+          <SectionTitle
+            index="03"
+            title="Ideas generating discussion"
+            question="What people were responding to—not which post looked largest."
+            layer="derived"
+          />
+          <div className="divide-y divide-black/12 border border-black/14 bg-white">
+            {ideaClusters.map((cluster, index) => (
+              <article
+                key={cluster.idea}
+                className="grid gap-5 p-6 md:grid-cols-[58px_1fr_150px] md:items-start"
+              >
+                <span className="font-serif text-3xl text-black/28">0{index + 1}</span>
+                <div>
+                  <h3 className="font-serif text-2xl leading-none tracking-[-0.025em]">
+                    {cluster.idea}
+                  </h3>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-black/58">
+                    {cluster.description}
+                  </p>
+                  <p className="mt-4 border-l-2 border-[#b7781d] pl-3 text-xs italic leading-5 text-black/54">
+                    {cluster.comment}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
                   <div>
-                    <p className="text-sm font-semibold">{recommendation.contentIdea}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">“{recommendation.hook}”</p>
+                    <div className="font-serif text-2xl">{cluster.posts}</div>
+                    <div className="text-[10px] text-black/42">related posts</div>
                   </div>
-                  <span className="text-[10px] font-semibold">{recommendation.confidence}% confidence</span>
+                  <div>
+                    <div className="font-serif text-2xl">{cluster.comments}</div>
+                    <div className="text-[10px] text-black/42">public comments</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="pb-12">
+          <SectionTitle
+            index="04"
+            title="Audience quality"
+            question="A modeled view of seniority, role, repeat engagement, and named accounts."
+            layer="derived"
+          />
+          <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="border border-[#c99b55] bg-[#fff8e9] p-6">
+              <div className="flex items-center gap-3">
+                <Users className="size-4 text-[#7b4b05]" />
+                <h3 className="text-sm font-semibold">Role mix</h3>
+              </div>
+              <div className="mt-7 space-y-4">
+                {audienceMix.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                      <span>{item.label}</span>
+                      <span className="font-mono">
+                        {item.count} · {item.value}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-[#e9d6b6]">
+                      <div
+                        className="h-full bg-[#8a5a11]"
+                        style={{ width: `${item.value}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-6 text-[10px] leading-5 text-[#5f461f]/65">
+                Roles are inferred from self-reported LinkedIn headlines. Ambiguous
+                profiles stay in “Other / unclear.”
+              </p>
+            </div>
+
+            <div className="border border-[#c99b55] bg-white">
+              <div className="flex items-center justify-between border-b border-black/10 p-5">
+                <div className="flex items-center gap-3">
+                  <Building2 className="size-4 text-[#7b4b05]" />
+                  <div>
+                    <h3 className="text-sm font-semibold">Account examples</h3>
+                    <p className="mt-0.5 text-[10px] text-black/42">
+                      Company names parsed from public headlines
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-black/48">
+                  <Repeat2 className="size-3.5" />
+                  {observedSummary.repeatEngagers} people engaged with 2+ posts
+                </div>
+              </div>
+              <div className="divide-y divide-black/8">
+                {accountActivity.slice(0, 4).map((account) => (
+                  <div
+                    key={account.account}
+                    className="grid gap-3 p-5 sm:grid-cols-[1fr_190px] sm:items-center"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold">{account.account}</p>
+                      <p className="mt-1 text-[11px] leading-5 text-black/48">
+                        {account.ideas}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-right">
+                      <div>
+                        <div className="font-serif text-xl">{account.people}</div>
+                        <div className="text-[9px] text-black/40">people</div>
+                      </div>
+                      <div>
+                        <div className="font-serif text-xl">{account.posts}</div>
+                        <div className="text-[9px] text-black/40">posts</div>
+                      </div>
+                      <div>
+                        <div className="font-serif text-xl">{account.touches}</div>
+                        <div className="text-[9px] text-black/40">touches</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="pb-12">
+          <SectionTitle
+            index="05"
+            title="Pipeline influence"
+            question="A demonstration of the join a CRM would make possible."
+            layer="seeded"
+          />
+          <div className="border border-[#7766a9] bg-[#f5f1ff]">
+            <div className="grid gap-6 border-b border-[#7766a9]/25 p-6 lg:grid-cols-[280px_1fr]">
+              <div>
+                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#55447f]/65">
+                  Seeded open pipeline
+                </p>
+                <p className="mt-2 font-serif text-5xl tracking-[-0.05em] text-[#30264b]">
+                  {compactCurrency.format(seededTotal)}
+                </p>
+                <p className="mt-2 text-xs text-[#55447f]/65">
+                  Three demonstration opportunities
+                </p>
+              </div>
+              <div className="border-l border-[#7766a9]/25 pl-6">
+                <p className="text-sm font-semibold text-[#30264b]">
+                  This section demonstrates how content influence could be connected
+                  to pipeline when CRM data exists.
+                </p>
+                <p className="mt-2 text-xs leading-5 text-[#55447f]/70">
+                  The engagement and named people come from the supplied export. The
+                  opportunities, values, stages, and timing are seeded. The connection
+                  is an influence hypothesis, never a claim that content caused a deal.
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-[#7766a9]/20">
+              {seededPipeline.map((item) => (
+                <div
+                  key={item.account}
+                  className="grid gap-4 p-6 md:grid-cols-[180px_1fr_120px] md:items-center"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#30264b]">{item.account}</p>
+                    <p className="mt-1 text-[10px] text-[#55447f]/62">
+                      {item.observedSignal}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#30264b]">{item.opportunity}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#55447f]/65">
+                      {item.influence}
+                    </p>
+                  </div>
+                  <div className="md:text-right">
+                    <p className="font-serif text-2xl text-[#30264b]">
+                      {compactCurrency.format(item.value)}
+                    </p>
+                    <p className="text-[9px] uppercase tracking-[0.1em] text-[#55447f]/55">
+                      {item.stage}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mb-4 flex flex-col justify-between gap-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-sm font-semibold">How to read these numbers</p>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-amber-900/65">{data.client.attributionDisclaimer}</p>
+        <section className="pb-12">
+          <SectionTitle
+            index="06"
+            title="What we learned"
+            question="Interpretation for the client—not a tactical publishing plan."
+            layer="derived"
+          />
+          <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+            <div className="border border-black/14 bg-[#caff54] p-7">
+              <MessageSquareText className="size-5" />
+              <div className="mt-14 space-y-6">
+                {whatWeLearned.map((item, index) => (
+                  <div key={item} className="grid grid-cols-[28px_1fr] gap-3">
+                    <span className="font-mono text-[10px] text-black/45">0{index + 1}</span>
+                    <p className="font-serif text-2xl leading-[1.12] tracking-[-0.025em]">
+                      {item}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ConfidencePanel compact />
           </div>
-          <Button render={<Link href="/strategist" />} variant="outline" className="shrink-0 rounded-full bg-white">
-            See the evidence <ArrowRight className="size-4" />
-          </Button>
         </section>
+
+        <footer className="flex flex-col justify-between gap-3 border-t border-black/16 py-5 text-[10px] text-black/42 sm:flex-row">
+          <span>
+            Observed: supplied Apify export · Derived: classification and role/account
+            modeling · Seeded: CRM demonstration
+          </span>
+          <a
+            href="/strategist"
+            className="inline-flex items-center gap-1 font-semibold text-black hover:underline"
+          >
+            Open the strategist evidence view <ArrowUpRight className="size-3" />
+          </a>
+        </footer>
       </div>
     </AppShell>
   );

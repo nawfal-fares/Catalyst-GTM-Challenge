@@ -49,30 +49,30 @@
 }
 
 :root {
-  --background: #f6f6f1;
-  --foreground: #11110f;
+  --background: #f2f0e9;
+  --foreground: #17201f;
   --card: oklch(1 0 0);
   --card-foreground: #11110f;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #11110f;
+  --primary: #17201f;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: #efefe9;
   --muted-foreground: #706f68;
-  --accent: #d9ff72;
+  --accent: #caff54;
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #deded7;
-  --input: #deded7;
-  --ring: #a3e635;
+  --border: #d2d0c7;
+  --input: #d2d0c7;
+  --ring: #6e8f2f;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.8rem;
+  --radius: 0.25rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -125,6 +125,7 @@
     @apply bg-background text-foreground;
     font-family: var(--font-geist-sans), Arial, sans-serif;
     text-rendering: optimizeLegibility;
+    letter-spacing: -0.01em;
   }
   html {
     @apply font-sans;
@@ -132,8 +133,12 @@
 }
 
 ::selection {
-  background: #d9ff72;
-  color: #11110f;
+  background: #caff54;
+  color: #17201f;
+}
+
+.font-serif {
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 a,

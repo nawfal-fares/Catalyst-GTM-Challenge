@@ -1,58 +1,89 @@
-# Technical memo: Catalyst Signal Room
+# Product memo: Catalyst Market Intelligence
 
-## Product and architecture
+## Product position
 
-The product is an influence system, not a generic social dashboard. Its core object is the relationship between a piece of thinking, the people who engage with it, the accounts those people belong to, and what happens in pipeline afterward.
+This prototype is not a generic social dashboard. It is a decision-support
+product for a content-led GTM team.
 
-The ingestion boundary accepts the mixed Apify export and emits canonical posts, aliases, engagement events, and people. Canonical URL is the strongest post key; LinkedIn IDs are retained as aliases because reposts and scraper views can produce multiple activity IDs for one underlying post. Reaction/comment source IDs are unique keys, making replay safe.
+Catalyst’s public positioning is built around turning original executive insight
+into pipeline. The company is explicit that impressions and follower growth are
+not sufficient outcomes. The prototype therefore starts with a different
+question: what did the market reveal through its response, and what should a
+strategist do with that information?
 
-Owned analytics and public identity stay separate. In production, Zernio supplies impressions, reach, clicks, views, and saves; Apify supplies public engagement plus who reacted or commented. The preferred join is LinkedIn post ID or canonical URL. The fallback is normalized content hash plus a narrow publish-time window. This avoids pretending Apify exposes owned impression data.
+The two routes serve different decisions:
 
-The intelligence services are adapters with deterministic fallbacks:
+- The client view answers whether the content is producing meaningful market
+  engagement.
+- The strategist view answers what deserves attention and what should happen
+  next.
 
-- OpenAI can classify each post into a configurable canonical taxonomy. The local analyzer keeps the demo useful without a key.
-- Apollo resolves LinkedIn identity to role, seniority, department, and company. The demo resolver is seeded and labeled.
-- ICP scoring is explainable: role, seniority, department, company size/industry/stage, target-list membership, and buying triggers contribute to a score; missing fields reduce confidence.
-- HubSpot and Salesforce connectors share an opportunity boundary. Demo opportunities are seeded and never presented as live.
+## Evidence and trust
 
-The two pages deliberately serve different jobs. The strategist view exposes evidence, uncertainty, comment queues, velocity, account signals, and recommendation rationale. The client view emphasizes progress, strategic direction, and the content-to-pipeline story without operational noise.
+The core product decision is to separate observed, derived, and seeded data.
 
-## Data model and scale
+Observed data comes directly from the supplied Apify export: posts, comments,
+reactions, actor headlines, timestamps, and public engagement totals. Derived
+data interprets that evidence: content classification, substantive-comment
+rules, role mix, company grouping, discussion themes, and recommendations.
+Seeded data appears only in the pipeline demonstration.
 
-Historical state is first-class. `metric_snapshots` is a time-series table, not columns overwritten on `posts`. Engagement events, ICP scores, analysis runs, and attribution links also retain history. Model/taxonomy versions make past outputs reproducible.
+This separation prevents three common attribution errors:
 
-Important constraints and indexes include:
+1. treating modeled reach as an owned platform metric;
+2. treating a job-title parser as verified enrichment;
+3. treating account exposure as proof that content caused an opportunity.
 
-- unique platform post IDs and canonical URLs per content account;
-- unique provider reaction/comment IDs for replay-safe upserts;
-- `(post_id, captured_at desc)` for post curves;
-- account/time and person/time indexes for influence analysis;
-- target-account partial index;
-- idea/company/time indexes for repeated seeding;
-- BRIN on append-heavy snapshot timestamps.
+Confidence is visible because uncertainty changes the decision. Observed
+activity is high confidence. Content classification and account grouping are
+medium confidence. Estimated reach and pipeline influence are low confidence.
 
-At 15M–50M rows, snapshots and engagement events should be time-partitioned. Raw events remain the audit trail, while incremental daily rollups serve dashboard queries. Hot raw data can stay in Postgres for roughly 90 days; older raw events move to object storage, with daily aggregates retained. Enrichment and analysis run in background queues with rate limits, retries, and dead-letter handling. Every list query uses cursor pagination.
+## What the sample says
 
-## Learning loop and recommendations
+The strongest market-learning event was the post arguing that annual editorial
+calendars are obsolete. All 23 captured comments contained a point, example,
+question, or objection. The thread moved beyond agreement into operating
+constraints: stakeholder alignment, reactive decision-making, and the problem
+of learning before a company has a large audience.
 
-Recommendations combine reach velocity, engagement rate, substantive-comment score, ICP-weighted engagement, target-account touches, repeated idea seeding, content taxonomy performance, timing, and pipeline influence. Evidence is attached to every recommendation so a strategist can reject the inference.
+The giveaway post produced a different signal. It reported 38 public comments;
+of the 27 comments captured in the export, 20 were only the requested keyword.
+That is evidence of demand for the asset and the distribution mechanic. It is
+not evidence that buyers accepted the thesis or intended to buy.
 
-The loop improves in two ways. First, each new metric snapshot changes velocity and format/topic benchmarks. Second, strategist actions—accept, reject, rewrite, publish—and later performance become feedback labels. In production I would evaluate recommendation lift against a holdout baseline, not merely whether an idea was accepted.
+The AI-agent security benchmark produced little volume but high-value feedback.
+Its two captured commenters included an SVP Marketing and a Head of Enterprise
+Business. One identified a wrong logo and company tag. The product treats that
+as a research-quality problem to correct before repeating the format.
 
-ICP weights should be backtested against historical won, lost, and no-decision accounts. Optimize thresholds for useful precision/recall by segment, monitor drift, and preserve human overrides. A score is a prioritization tool, not truth.
+## Recommendation logic
 
-## ROI and trust
+Recommendations use a fixed structure:
 
-Attribution has three explicit models:
+`Observation → Evidence → Recommendation → Expected outcome → Confidence`
 
-- **Direct:** a known engager/contact has a defensible event-time path into an opportunity.
-- **Influenced:** an account stakeholder engaged during the opportunity window.
-- **Estimated:** account-level exposure is inferred from repeated stakeholder behavior.
+This makes the strategist’s inference inspectable. The recommendation board
+does not rely on a composite score or fake precision. Each recommendation can be
+accepted, challenged, or rewritten by examining the evidence beside it.
 
-The client should trust the view because the model, confidence, source mode, and explanation are visible. Idea seeding is framed as influence intelligence, never hard causation. In the demo, public engagement identity is observed; reach, enrichment, opportunity, and attribution data are labeled as seeded or estimated.
+The next useful test is not “post more.” It is to publish the operating model
+requested by the comments: how a weekly signal review works, how quarterly
+alignment is preserved, and how the team distinguishes evidence from noise.
 
-## Cost and failure points
+## Pipeline framing
 
-The inexpensive work—normalization, rollups, rules, scoring, and most recommendations—belongs in code and SQL. Paying an LLM per reaction or metric row would be wasteful. Use an LLM once per new/changed post and optionally for recommendation synthesis after deterministic feature computation.
+The pipeline section is intentionally a demonstration. Observed people and
+account activity are joined to seeded opportunities to show the product shape
+that becomes possible with CRM data. It does not claim that the opportunities
+exist or that content caused them.
 
-At moderate scale, the likely monthly costs are Postgres/Supabase, scraping, enrichment, and background compute; LLM analysis is a smaller line item because posts are low volume. Apollo-style enrichment is likely the first cost pressure, so cache permanently where terms allow, enrich only strategically valuable identities, and progressively fill missing fields. The first technical bottleneck is event-table query shape, solved with partitioning and rollups. The first product risk is false confidence in attribution, solved with model labels, time-aware evidence, and conservative language.
+A production implementation would need verified contact-to-account mappings,
+opportunity creation dates, stage history, and content-touch timestamps. Even
+then, the appropriate language is influence, not causation.
+
+## Limitation that matters most
+
+The export is a single recent snapshot. It can support discussion analysis and
+identity-based audience patterns. It cannot support momentum claims because
+there is no second comparable timestamp. The strategist view states this
+directly instead of manufacturing a velocity score.
