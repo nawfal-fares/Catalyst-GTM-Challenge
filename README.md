@@ -92,7 +92,9 @@ Key code:
 
 ## Scheduling
 
-Vercel cron calls `/api/cron/sync` every two hours. The refresh policy is:
+The included Vercel Hobby deployment calls `/api/cron/sync` daily at 13:00 UTC.
+On Vercel Pro, change `vercel.json` to `0 */2 * * *` to invoke the production
+refresh policy every two hours. The policy itself is:
 
 - posts under 48 hours: every 2–4 hours during US working hours;
 - posts 2–14 days old: daily;
