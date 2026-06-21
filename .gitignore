@@ -14,11 +14,10 @@ credentials.md
 *.key
 *.p12
 
-# Local tooling
-.vercel/
+# Local tooling and Vercel project linkage
+.vercel
 .DS_Store
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
